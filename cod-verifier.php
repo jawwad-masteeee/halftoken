@@ -2,7 +2,7 @@
 /*
 Plugin Name: COD Verifier for WooCommerce
 Description: Multi-country OTP + Token verification for WooCommerce COD orders with Twilio SMS and Razorpay integration
-Version: 1.3.0
+Version: 1.4.0
 Author: Your Name
 Requires at least: 5.0
 Tested up to: 6.4
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('COD_VERIFIER_VERSION', '1.3.0');
+define('COD_VERIFIER_VERSION', '1.4.0');
 define('COD_VERIFIER_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('COD_VERIFIER_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -125,7 +125,6 @@ class CODVerifier {
                 'testMode' => get_option('cod_verifier_test_mode', '1'),
                 'allowedRegions' => get_option('cod_verifier_allowed_regions', 'india'),
                 'otpTimerDuration' => get_option('cod_verifier_otp_timer_duration', 30),
-                'razorpayMode' => get_option('cod_verifier_razorpay_mode', 'test'),
             ));
         }
     }
@@ -217,6 +216,8 @@ class CODVerifier {
         if (isset($_SESSION['cod_otp_time'])) unset($_SESSION['cod_otp_time']);
         if (isset($_SESSION['cod_otp_verified'])) unset($_SESSION['cod_otp_verified']);
         if (isset($_SESSION['cod_token_paid'])) unset($_SESSION['cod_token_paid']);
+        if (isset($_SESSION['cod_payment_link_id'])) unset($_SESSION['cod_payment_link_id']);
+        if (isset($_SESSION['cod_payment_link_created'])) unset($_SESSION['cod_payment_link_created']);
     }
     
     public function admin_configuration_notices() {
@@ -298,7 +299,7 @@ class CODVerifier {
         add_option('cod_verifier_twilio_number', '');
         add_option('cod_verifier_razorpay_key_id', '');
         add_option('cod_verifier_razorpay_key_secret', '');
-        add_option('cod_verifier_razorpay_mode', 'test'); // Default to test mode
+        add_option('cod_verifier_razorpay_webhook_secret', '');
         
         // Check if Twilio SDK directory exists
         $twilio_sdk_path = COD_VERIFIER_PLUGIN_PATH . 'includes/twilio-sdk/';

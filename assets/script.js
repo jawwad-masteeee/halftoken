@@ -1,7 +1,7 @@
 jQuery(document).ready(function($) {
     'use strict';
     
-    console.log('COD Verifier: Multi-country script with Razorpay initialized');
+    console.log('COD Verifier: Multi-country script with Razorpay Payment Links initialized');
     
     // Check if codVerifier is defined
     if (typeof codVerifier === 'undefined') {
@@ -26,7 +26,8 @@ jQuery(document).ready(function($) {
     let verificationBoxCreated = false;
     let warningMessageCreated = false;
     let otpTimer = null;
-    let tokenTimer = null; // NEW: Token payment timer
+    let tokenTimer = null;
+    let paymentModal = null;
     
     console.log('COD Verifier: Checkout type:', isBlockCheckout ? 'Blocks' : 'Classic');
     console.log('COD Verifier: Settings:', settings);
@@ -143,196 +144,317 @@ jQuery(document).ready(function($) {
         }
     }
     
-    // ===== NEW: TOKEN PAYMENT TIMER FUNCTIONALITY =====
+    // ===== PAYMENT MODAL FUNCTIONALITY =====
     
-    function startTokenTimer(duration) {
-        const $btn = $('#cod_pay_token');
-        let timeLeft = duration;
-        
-        // Start countdown
-        tokenTimer = setInterval(() => {
-            if (timeLeft > 0) {
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                const displayTime = seconds < 10 ? `0${seconds}` : seconds;
-                
-                if (minutes > 0) {
-                    $btn.text(`Payment expires in ${minutes}:${displayTime}`);
-                } else {
-                    $btn.text(`Payment expires in ${seconds}s`);
-                }
-                
-                timeLeft--;
-            } else {
-                clearInterval(tokenTimer);
-                tokenTimer = null;
-                
-                // Reset button and hide QR/payment UI
-                $btn.prop('disabled', false).text('Pay ₹1 Token').removeClass('verified');
-                $('#cod-token-qr-container').hide();
-                $('#cod_token_message').removeClass('success error').hide();
-                
-                showMessage('token', '⛔ Payment session expired. Please try again.', 'error');
-                console.log('COD Verifier: Token payment timer expired');
-            }
-        }, 1000);
-        
-        console.log('COD Verifier: Token payment timer started for', duration, 'seconds');
-    }
-    
-    function clearTokenTimer() {
-        if (tokenTimer) {
-            clearInterval(tokenTimer);
-            tokenTimer = null;
+    function createPaymentModal() {
+        if (paymentModal) {
+            return paymentModal;
         }
-    }
-    
-    // ===== DEVICE DETECTION & UI SWITCHING =====
-    
-    function isMobileDevice() {
-        return window.innerWidth <= 768;
-    }
-    
-    function createQRContainer() {
-        if ($('#cod-token-qr-container').length === 0) {
-            const qrHTML = `
-                <div id="cod-token-qr-container" style="display: none; text-align: center; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div id="cod-token-qr-content">
-                        <div style="margin-bottom: 10px; font-weight: 500; color: #374151;">
-                            🛈 Scan this QR code with any UPI app
+        
+        const modalHTML = `
+            <div id="cod-payment-modal" class="cod-payment-modal" style="display: none;">
+                <div class="cod-payment-modal-overlay"></div>
+                <div class="cod-payment-modal-content">
+                    <div class="cod-payment-modal-header">
+                        <h3>₹1 Token Payment</h3>
+                        <button type="button" class="cod-payment-modal-close">&times;</button>
+                    </div>
+                    <div class="cod-payment-modal-body">
+                        <div class="cod-payment-tabs">
+                            <button type="button" id="cod-tab-qr" class="cod-payment-tab">
+                                <span class="cod-tab-icon">📱</span>
+                                Scan QR Code
+                            </button>
+                            <button type="button" id="cod-tab-app" class="cod-payment-tab">
+                                <span class="cod-tab-icon">💳</span>
+                                Pay via App
+                            </button>
                         </div>
-                        <div id="cod-token-qr-image" style="margin: 10px 0;"></div>
-                        <div style="font-size: 12px; color: #6b7280;">
-                            Payment will expire in 2 minutes
+                        <div class="cod-payment-content">
+                            <div id="cod-payment-qr-section" class="cod-payment-section">
+                                <div class="cod-qr-container">
+                                    <div id="cod-qr-code"></div>
+                                    <p class="cod-qr-instructions">Scan this QR code with any UPI app to pay ₹1</p>
+                                </div>
+                            </div>
+                            <div id="cod-payment-app-section" class="cod-payment-section" style="display: none;">
+                                <div class="cod-app-container">
+                                    <p class="cod-app-instructions">Click the button below to open your UPI app</p>
+                                    <button type="button" id="cod-proceed-payment" class="cod-btn cod-btn-primary cod-btn-large">
+                                        Proceed to Pay ₹1
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cod-payment-info">
+                            <div id="cod-payment-status" class="cod-payment-status"></div>
+                            <div class="cod-payment-timer">
+                                <span id="cod-payment-countdown">Payment expires in 2:00</span>
+                            </div>
+                            <div class="cod-payment-note">
+                                <small>💡 ₹1 will be automatically refunded after verification</small>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            $('#cod_pay_token').after(qrHTML);
-        }
-    }
-    
-    // ===== FLOATING POPUP NOTIFICATION SYSTEM =====
-    
-    function createFloatingPopupHTML() {
-        return `
-            <div id="cod-floating-popup" class="cod-floating-popup" style="display: none;">
-                <div class="cod-popup-container">
-                    <div class="cod-popup-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="cod-popup-content">
-                        <div class="cod-popup-title">Verification Required</div>
-                        <div class="cod-popup-message"></div>
-                    </div>
-                    <button class="cod-popup-close" type="button" aria-label="Close notification">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
         `;
+        
+        $('body').append(modalHTML);
+        paymentModal = $('#cod-payment-modal');
+        
+        // Add modal styles
+        addPaymentModalStyles();
+        
+        // Bind events
+        bindPaymentModalEvents();
+        
+        return paymentModal;
     }
     
-    function injectFloatingPopupStyles() {
-        if ($('#cod-floating-popup-styles').length > 0) return;
+    function addPaymentModalStyles() {
+        if ($('#cod-payment-modal-styles').length > 0) return;
         
         const styles = `
-            <style id="cod-floating-popup-styles">
-                .cod-floating-popup {
+            <style id="cod-payment-modal-styles">
+                .cod-payment-modal {
                     position: fixed;
-                    top: 20px;
-                    right: 20px;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
                     z-index: 999999;
-                    max-width: 400px;
-                    min-width: 320px;
-                    pointer-events: none;
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 }
                 
-                .cod-popup-container {
+                .cod-payment-modal-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.7);
+                    backdrop-filter: blur(2px);
+                }
+                
+                .cod-payment-modal-content {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
                     background: #ffffff;
-                    border: 1px solid #e2e8f0;
                     border-radius: 12px;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-                    padding: 16px;
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                    pointer-events: auto;
-                    transform: translateX(100%);
-                    opacity: 0;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 90vh;
+                    overflow: hidden;
+                    animation: modalSlideIn 0.3s ease-out;
                 }
                 
-                .cod-floating-popup.show .cod-popup-container {
-                    transform: translateX(0);
-                    opacity: 1;
+                @keyframes modalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translate(-50%, -60%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translate(-50%, -50%);
+                    }
                 }
                 
-                .cod-popup-icon {
-                    flex-shrink: 0;
-                    width: 40px;
-                    height: 40px;
+                .cod-payment-modal-header {
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
                     color: white;
+                    padding: 20px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                 }
                 
-                .cod-popup-content {
-                    flex: 1;
-                    min-width: 0;
-                }
-                
-                .cod-popup-title {
+                .cod-payment-modal-header h3 {
+                    margin: 0;
+                    font-size: 18px;
                     font-weight: 600;
-                    font-size: 14px;
-                    color: #1f2937;
-                    margin-bottom: 4px;
-                    line-height: 1.4;
                 }
                 
-                .cod-popup-message {
-                    font-size: 13px;
-                    color: #6b7280;
-                    line-height: 1.5;
-                    word-wrap: break-word;
-                }
-                
-                .cod-popup-close {
-                    flex-shrink: 0;
-                    width: 24px;
-                    height: 24px;
-                    border: none;
+                .cod-payment-modal-close {
                     background: none;
-                    color: #9ca3af;
+                    border: none;
+                    color: white;
+                    font-size: 24px;
                     cursor: pointer;
-                    border-radius: 4px;
+                    padding: 0;
+                    width: 30px;
+                    height: 30px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    transition: all 0.2s ease;
+                    border-radius: 50%;
+                    transition: background-color 0.2s;
+                }
+                
+                .cod-payment-modal-close:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+                
+                .cod-payment-modal-body {
                     padding: 0;
                 }
                 
-                .cod-popup-close:hover {
-                    color: #6b7280;
-                    background: #f3f4f6;
+                .cod-payment-tabs {
+                    display: flex;
+                    border-bottom: 1px solid #e2e8f0;
                 }
                 
-                @media (max-width: 480px) {
-                    .cod-floating-popup {
-                        top: 10px;
-                        right: 10px;
-                        left: 10px;
-                        max-width: none;
-                        min-width: auto;
+                .cod-payment-tab {
+                    flex: 1;
+                    padding: 15px 20px;
+                    border: none;
+                    background: #f8fafc;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: #64748b;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+                
+                .cod-payment-tab:hover {
+                    background: #e2e8f0;
+                }
+                
+                .cod-payment-tab.active {
+                    background: white;
+                    color: #1e293b;
+                    border-bottom: 2px solid #667eea;
+                }
+                
+                .cod-tab-icon {
+                    font-size: 16px;
+                }
+                
+                .cod-payment-content {
+                    padding: 30px;
+                }
+                
+                .cod-payment-section {
+                    text-align: center;
+                }
+                
+                .cod-qr-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 20px;
+                }
+                
+                #cod-qr-code {
+                    padding: 20px;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border: 2px dashed #cbd5e1;
+                    display: inline-block;
+                }
+                
+                .cod-qr-instructions {
+                    margin: 0;
+                    color: #64748b;
+                    font-size: 14px;
+                }
+                
+                .cod-app-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 20px;
+                }
+                
+                .cod-app-instructions {
+                    margin: 0;
+                    color: #64748b;
+                    font-size: 14px;
+                }
+                
+                .cod-payment-info {
+                    margin-top: 20px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e2e8f0;
+                    text-align: center;
+                }
+                
+                .cod-payment-status {
+                    margin-bottom: 10px;
+                    font-size: 14px;
+                }
+                
+                .cod-payment-status.success {
+                    color: #059669;
+                }
+                
+                .cod-payment-status.error {
+                    color: #dc2626;
+                }
+                
+                .cod-payment-timer {
+                    margin-bottom: 10px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: #f59e0b;
+                }
+                
+                .cod-payment-note {
+                    color: #64748b;
+                    font-size: 12px;
+                }
+                
+                .cod-btn {
+                    padding: 12px 24px;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    text-decoration: none;
+                    display: inline-block;
+                }
+                
+                .cod-btn-primary {
+                    background: #667eea;
+                    color: white;
+                }
+                
+                .cod-btn-primary:hover {
+                    background: #5a67d8;
+                }
+                
+                .cod-btn-large {
+                    padding: 15px 30px;
+                    font-size: 16px;
+                }
+                
+                .cod-btn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                
+                @media (max-width: 768px) {
+                    .cod-payment-modal-content {
+                        width: 95%;
+                        margin: 20px;
+                    }
+                    
+                    .cod-payment-content {
+                        padding: 20px;
+                    }
+                    
+                    .cod-payment-tab {
+                        padding: 12px 15px;
+                        font-size: 13px;
                     }
                 }
             </style>
@@ -341,45 +463,178 @@ jQuery(document).ready(function($) {
         $('head').append(styles);
     }
     
-    function showFloatingMessage(message, title = 'Verification Required') {
-        injectFloatingPopupStyles();
-        $('#cod-floating-popup').remove();
-        $('body').append(createFloatingPopupHTML());
-        
-        const $popup = $('#cod-floating-popup');
-        const $messageEl = $popup.find('.cod-popup-message');
-        const $titleEl = $popup.find('.cod-popup-title');
-        const $closeBtn = $popup.find('.cod-popup-close');
-        
-        $titleEl.text(title);
-        $messageEl.text(message);
-        
-        $popup.show();
-        setTimeout(() => $popup.addClass('show'), 10);
-        
-        const autoHideTimer = setTimeout(() => hideFloatingMessage(), 5000);
-        
-        $closeBtn.off('click').on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            clearTimeout(autoHideTimer);
-            hideFloatingMessage();
+    function bindPaymentModalEvents() {
+        // Close modal
+        $(document).on('click', '.cod-payment-modal-close, .cod-payment-modal-overlay', function() {
+            closePaymentModal();
         });
         
-        $popup.data('autoHideTimer', autoHideTimer);
-        console.log('COD Verifier: Floating message shown:', message);
+        // Tab switching
+        $(document).on('click', '#cod-tab-qr', function() {
+            switchPaymentTab('qr');
+        });
+        
+        $(document).on('click', '#cod-tab-app', function() {
+            switchPaymentTab('app');
+        });
+        
+        // Proceed to payment
+        $(document).on('click', '#cod-proceed-payment', function() {
+            if (window.currentPaymentUrl) {
+                window.open(window.currentPaymentUrl, '_blank');
+            }
+        });
+        
+        // Escape key to close
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && paymentModal && paymentModal.is(':visible')) {
+                closePaymentModal();
+            }
+        });
     }
     
-    function hideFloatingMessage() {
-        const $popup = $('#cod-floating-popup');
-        if ($popup.length === 0) return;
+    function openPaymentModal() {
+        if (!paymentModal) {
+            createPaymentModal();
+        }
         
-        const timer = $popup.data('autoHideTimer');
-        if (timer) clearTimeout(timer);
+        // Reset modal state
+        $('#cod-payment-status').removeClass('success error').text('');
+        $('#cod-qr-code').empty();
+        window.currentPaymentUrl = null;
         
-        $popup.removeClass('show');
-        setTimeout(() => $popup.remove(), 300);
-        console.log('COD Verifier: Floating message hidden');
+        // Auto-select tab based on device
+        const isMobile = window.innerWidth <= 768;
+        switchPaymentTab(isMobile ? 'app' : 'qr');
+        
+        // Show modal
+        paymentModal.fadeIn(300);
+        
+        // Create payment link
+        createPaymentLink();
+    }
+    
+    function closePaymentModal() {
+        if (paymentModal) {
+            paymentModal.fadeOut(300);
+        }
+        
+        // Clear timer
+        clearTokenTimer();
+        
+        // Re-enable pay button
+        const $payBtn = $('#cod_pay_token');
+        $payBtn.prop('disabled', false).text('Pay ₹1 Token').removeClass('verified');
+    }
+    
+    function switchPaymentTab(tab) {
+        if (tab === 'qr') {
+            $('#cod-tab-qr').addClass('active');
+            $('#cod-tab-app').removeClass('active');
+            $('#cod-payment-qr-section').show();
+            $('#cod-payment-app-section').hide();
+        } else {
+            $('#cod-tab-app').addClass('active');
+            $('#cod-tab-qr').removeClass('active');
+            $('#cod-payment-qr-section').hide();
+            $('#cod-payment-app-section').show();
+        }
+    }
+    
+    function createPaymentLink() {
+        $('#cod-payment-status').text('Creating payment link...');
+        
+        $.ajax({
+            url: codVerifier.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'cod_create_payment_link',
+                nonce: codVerifier.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    window.currentPaymentUrl = data.short_url;
+                    
+                    if (data.test_mode) {
+                        $('#cod-payment-status').addClass('success').text('Test mode: Payment link created');
+                        generateTestQR(data.short_url);
+                    } else {
+                        $('#cod-payment-status').addClass('success').text('Payment link created successfully');
+                        generateQRCode(data.short_url);
+                    }
+                    
+                    // Start 2-minute timer
+                    startTokenTimer(120);
+                } else {
+                    $('#cod-payment-status').addClass('error').text(response.data || 'Failed to create payment link');
+                }
+            },
+            error: function() {
+                $('#cod-payment-status').addClass('error').text('Network error. Please try again.');
+            }
+        });
+    }
+    
+    function generateQRCode(url) {
+        // Clear previous QR code
+        $('#cod-qr-code').empty();
+        
+        // Check if QRCode library is available
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(document.getElementById('cod-qr-code'), {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } else {
+            // Fallback: Use online QR code generator
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+            $('#cod-qr-code').html(`<img src="${qrUrl}" alt="Payment QR Code" style="max-width: 200px; border-radius: 8px;">`);
+        }
+    }
+    
+    function generateTestQR(url) {
+        // For test mode, create a simple placeholder QR
+        $('#cod-qr-code').html(`
+            <div style="width: 200px; height: 200px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #666; font-size: 14px; text-align: center;">
+                TEST QR CODE<br>
+                <small>Scan with UPI app</small>
+            </div>
+        `);
+    }
+    
+    function startTokenTimer(duration) {
+        let timeLeft = duration;
+        
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            $('#cod-payment-countdown').text(`Payment expires in ${displayTime}`);
+            
+            if (timeLeft <= 0) {
+                clearTokenTimer();
+                $('#cod-payment-status').removeClass('success').addClass('error').text('Payment session expired. You can retry.');
+                $('#cod-payment-countdown').text('Payment expired');
+            }
+            
+            timeLeft--;
+        }
+        
+        updateTimer(); // Update immediately
+        tokenTimer = setInterval(updateTimer, 1000);
+    }
+    
+    function clearTokenTimer() {
+        if (tokenTimer) {
+            clearInterval(tokenTimer);
+            tokenTimer = null;
+        }
     }
     
     // ===== UTILITY FUNCTIONS =====
@@ -460,9 +715,6 @@ jQuery(document).ready(function($) {
             
             // Initialize country code change handler
             initializeCountryCodeHandler();
-            
-            // Create QR container for token payments
-            createQRContainer();
             
             console.log('COD Verifier: Verification box created');
             return $clonedBox;
@@ -733,7 +985,6 @@ jQuery(document).ready(function($) {
         $('#cod_token_message').removeClass('success error').hide();
         $('#cod_verify_otp').prop('disabled', true).text('Verify').removeClass('verified');
         $('#cod_pay_token').text('Pay ₹1 Token').removeClass('verified');
-        $('#cod-token-qr-container').hide();
         
         // Clear timers
         clearOTPTimer();
@@ -889,190 +1140,16 @@ jQuery(document).ready(function($) {
             return; // Already verified, do nothing
         }
         
-        $btn.prop('disabled', true).text('Creating payment...');
-        
-        $.ajax({
-            url: codVerifier.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'cod_create_razorpay_order',
-                nonce: codVerifier.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    handleRazorpayOrder(response.data, $btn);
-                } else {
-                    showMessage('token', response.data, 'error');
-                    $btn.prop('disabled', false).text('Pay ₹1 Token');
-                }
-            },
-            error: function() {
-                showMessage('token', 'Failed to create payment order. Please try again.', 'error');
-                $btn.prop('disabled', false).text('Pay ₹1 Token');
-            }
-        });
+        // Open payment modal
+        openPaymentModal();
     });
-    
-    function handleRazorpayOrder(orderData, $btn) {
-        const isMobile = isMobileDevice();
-        
-        console.log('COD Verifier: Device detection - Mobile:', isMobile, 'Width:', window.innerWidth);
-        
-        if (orderData.test_mode) {
-            // Test mode - simulate payment
-            showMessage('token', '🔒 Test Mode: Payment simulation started', 'success');
-            
-            if (isMobile) {
-                showMessage('token', '📱 Mobile: Simulating Razorpay popup...', 'success');
-            } else {
-                $('#cod-token-qr-container').show();
-                $('#cod-token-qr-image').html('<div style="width: 200px; height: 200px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin: 0 auto; border-radius: 8px;"><span style="color: #666; font-size: 14px;">TEST QR CODE</span></div>');
-                showMessage('token', '🖥️ Desktop: Test QR code displayed', 'success');
-            }
-            
-            // Start 2-minute timer
-            startTokenTimer(120);
-            
-            // Simulate successful payment after 3 seconds
-            setTimeout(() => {
-                simulateSuccessfulPayment();
-            }, 3000);
-            
-        } else {
-            // Production mode
-            if (typeof Razorpay === 'undefined') {
-                // Load Razorpay script dynamically
-                const script = document.createElement('script');
-                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-                script.onload = () => {
-                    initializeRazorpayPayment(orderData, $btn, isMobile);
-                };
-                script.onerror = () => {
-                    showMessage('token', 'Failed to load payment gateway. Please refresh and try again.', 'error');
-                    $btn.prop('disabled', false).text('Pay ₹1 Token');
-                };
-                document.head.appendChild(script);
-            } else {
-                initializeRazorpayPayment(orderData, $btn, isMobile);
-            }
-        }
-    }
-    
-    function initializeRazorpayPayment(orderData, $btn, isMobile) {
-        const options = {
-            key: orderData.key_id,
-            amount: orderData.amount,
-            currency: orderData.currency,
-            name: 'COD Token Verification',
-            description: '₹1 verification payment (will be refunded)',
-            order_id: orderData.order_id,
-            handler: function(response) {
-                verifyRazorpayPayment(response);
-            },
-            prefill: {
-                contact: $('#cod_phone').val() ? $('#cod_country_code').val() + $('#cod_phone').val() : ''
-            },
-            theme: {
-                color: '#667eea'
-            },
-            modal: {
-                ondismiss: function() {
-                    // User closed popup - allow retry
-                    $btn.prop('disabled', false).text('Pay ₹1 Token');
-                    showMessage('token', 'Payment cancelled. You can try again.', 'error');
-                }
-            }
-        };
-        
-        const rzp = new Razorpay(options);
-        
-        if (isMobile) {
-            // Mobile: Show popup directly
-            rzp.open();
-            showMessage('token', '🔒 Secure Payment · ₹1 will be refunded automatically', 'success');
-        } else {
-            // Desktop: Show QR code
-            $('#cod-token-qr-container').show();
-            
-            if (orderData.qr_code_url) {
-                $('#cod-token-qr-image').html(`<img src="${orderData.qr_code_url}" alt="Payment QR Code" style="max-width: 200px; border-radius: 8px; border: 1px solid #e2e8f0;">`);
-            } else {
-                $('#cod-token-qr-image').html('<div style="width: 200px; height: 200px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin: 0 auto; border-radius: 8px;"><span style="color: #666; font-size: 14px;">QR Code Loading...</span></div>');
-            }
-            
-            showMessage('token', '🛈 Scan QR code with any UPI app. ₹1 will be refunded.', 'success');
-        }
-        
-        // Start 2-minute timer
-        startTokenTimer(120);
-    }
-    
-    function simulateSuccessfulPayment() {
-        // Test mode simulation
-        $.ajax({
-            url: codVerifier.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'cod_verify_razorpay_payment',
-                test_mode: true,
-                nonce: codVerifier.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    handleSuccessfulPayment(response.data);
-                }
-            }
-        });
-    }
-    
-    function verifyRazorpayPayment(razorpayResponse) {
-        $.ajax({
-            url: codVerifier.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'cod_verify_razorpay_payment',
-                payment_id: razorpayResponse.razorpay_payment_id,
-                order_id: razorpayResponse.razorpay_order_id,
-                signature: razorpayResponse.razorpay_signature,
-                nonce: codVerifier.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    handleSuccessfulPayment(response.data);
-                } else {
-                    showMessage('token', response.data, 'error');
-                    $('#cod_pay_token').prop('disabled', false).text('Pay ₹1 Token');
-                }
-            },
-            error: function() {
-                showMessage('token', 'Payment verification failed. Please try again.', 'error');
-                $('#cod_pay_token').prop('disabled', false).text('Pay ₹1 Token');
-            }
-        });
-    }
-    
-    function handleSuccessfulPayment(message) {
-        // Clear timer
-        clearTokenTimer();
-        
-        // Update UI
-        window.codVerifierStatus.tokenVerified = true;
-        $('#cod_token_confirmed').prop('checked', true);
-        $('#cod_pay_token').text('✓ Payment Complete').addClass('verified').prop('disabled', false);
-        $('#cod-token-qr-container').hide();
-        
-        showMessage('token', message, 'success');
-        updateVerificationStatus();
-        
-        console.log('COD Verifier: Token payment completed successfully');
-    }
 
     $(document).on('change', '#cod_token_confirmed', function() {
           console.log('COD Verifier: Token confirmed checkbox changed.');
           updatePlaceOrderButtonState();
      });
     
-    // ===== CRITICAL VALIDATION FUNCTION (Updated with Floating Popup) =====
+    // ===== CRITICAL VALIDATION FUNCTION =====
     
     function preventOrderPlacement(e) {
         console.log('COD Verifier: preventOrderPlacement triggered (final button check). ');
@@ -1102,7 +1179,7 @@ jQuery(document).ready(function($) {
                  
                  if (errors.length > 0) {
                     const message = 'Please complete the following steps:\n' + errors.join('\n');
-                    showFloatingMessage(message, 'Complete Verification');
+                    alert(message);
                     
                     const $verificationBox = $('#cod-verifier-wrapper-active');
                     if ($verificationBox.length > 0 && $verificationBox.is(':visible')) {
@@ -1192,4 +1269,11 @@ jQuery(document).ready(function($) {
         clearTokenTimer();
     });
 
+    // Load QRCode.js library if not already loaded
+    if (typeof QRCode === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.async = true;
+        document.head.appendChild(script);
+    }
 });
