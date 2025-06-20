@@ -1,0 +1,304 @@
+
+/* COD Verifier Styles */
+#cod-verifier-wrapper {
+    background: #f9f9f9;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.cod-verifier-container {
+    max-width: 100%;
+}
+
+.cod-verifier-header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.cod-verifier-header h3 {
+    color: #333;
+    margin: 0 0 10px 0;
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.cod-test-mode-notice,
+.cod-production-mode-notice {
+    background: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.cod-test-mode-notice {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.cod-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.cod-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.cod-section-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.cod-step {
+    background: #007cba;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.cod-field-group {
+    margin-bottom: 15px;
+}
+
+.cod-field-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.cod-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.cod-input-group input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.cod-input-group input:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
+}
+
+.cod-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.cod-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cod-btn-primary {
+    background: #007cba;
+    color: white;
+}
+
+.cod-btn-primary:hover:not(:disabled) {
+    background: #005a87;
+}
+
+.cod-btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.cod-btn-success:hover:not(:disabled) {
+    background: #218838;
+}
+
+.cod-btn-success.verified {
+    background: #155724;
+}
+
+.cod-btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.cod-btn-warning:hover:not(:disabled) {
+    background: #e0a800;
+}
+
+.cod-btn-warning.verified {
+    background: #28a745;
+    color: white;
+}
+
+.cod-token-info {
+    background: #f8f9fa;
+    border-left: 4px solid #007cba;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.cod-token-info p {
+    margin: 0 0 10px 0;
+    font-weight: 500;
+}
+
+.cod-test-info,
+.cod-production-info {
+    margin-top: 10px;
+}
+
+.cod-test-info small {
+    color: #856404;
+}
+
+.cod-production-info small {
+    color: #155724;
+}
+
+.cod-payment-actions {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.cod-confirmation {
+    margin: 15px 0;
+}
+
+.cod-checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cod-checkbox-label input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.cod-verification-status {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 20px;
+}
+
+.cod-verification-status h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.cod-status-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.cod-status-item:last-of-type {
+    border-bottom: none;
+}
+
+.cod-status-icon {
+    font-size: 1.2em;
+    margin-right: 10px;
+}
+
+.cod-status-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.cod-status-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.cod-status-badge.pending {
+    background: #ffc107;
+    color: #212529;
+}
+
+.cod-status-badge.verified {
+    background: #28a745;
+    color: white;
+}
+
+.cod-final-note {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.cod-message {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.cod-message.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.cod-message.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .cod-input-group {
+        flex-direction: column;
+    }
+    
+    .cod-input-group input {
+        margin-bottom: 10px;
+    }
+    
+    .cod-btn {
+        width: 100%;
+    }
+    
+    .cod-section-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .cod-step {
+        margin-top: 10px;
+    }
+}
