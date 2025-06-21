@@ -266,7 +266,7 @@ jQuery(document).ready(function($) {
                 .cod-payment-modal-header {
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     color: white;
-                    padding: 20px;
+                    padding: 1.25rem;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
@@ -274,7 +274,7 @@ jQuery(document).ready(function($) {
                 
                 .cod-payment-modal-header h3 {
                     margin: 0;
-                    font-size: 18px;
+                    font-size: 1.125rem;
                     font-weight: 600;
                 }
                 
@@ -282,7 +282,7 @@ jQuery(document).ready(function($) {
                     background: none;
                     border: none;
                     color: white;
-                    font-size: 24px;
+                    font-size: 1.5rem;
                     cursor: pointer;
                     padding: 0;
                     width: 30px;
@@ -309,18 +309,18 @@ jQuery(document).ready(function($) {
                 
                 .cod-payment-tab {
                     flex: 1;
-                    padding: 15px 20px;
+                    padding: 0.9375rem 1.25rem;
                     border: none;
                     background: #f8fafc;
                     cursor: pointer;
-                    font-size: 14px;
+                    font-size: 0.875rem;
                     font-weight: 500;
                     color: #64748b;
                     transition: all 0.2s;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 8px;
+                    gap: 0.5rem;
                 }
                 
                 .cod-payment-tab:hover {
@@ -334,11 +334,11 @@ jQuery(document).ready(function($) {
                 }
                 
                 .cod-tab-icon {
-                    font-size: 16px;
+                    font-size: 1rem;
                 }
                 
                 .cod-payment-content {
-                    padding: 30px;
+                    padding: 1.875rem;
                 }
                 
                 .cod-payment-section {
@@ -349,11 +349,11 @@ jQuery(document).ready(function($) {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 20px;
+                    gap: 1.25rem;
                 }
                 
                 #cod-qr-code {
-                    padding: 20px;
+                    padding: 1.25rem;
                     background: #f8fafc;
                     border-radius: 12px;
                     border: 2px dashed #cbd5e1;
@@ -363,32 +363,32 @@ jQuery(document).ready(function($) {
                 .cod-qr-instructions {
                     margin: 0;
                     color: #64748b;
-                    font-size: 14px;
+                    font-size: 0.875rem;
                 }
                 
                 .cod-app-container {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 20px;
+                    gap: 1.25rem;
                 }
                 
                 .cod-app-instructions {
                     margin: 0;
                     color: #64748b;
-                    font-size: 14px;
+                    font-size: 0.875rem;
                 }
                 
                 .cod-payment-info {
-                    margin-top: 20px;
-                    padding-top: 20px;
+                    margin-top: 1.25rem;
+                    padding-top: 1.25rem;
                     border-top: 1px solid #e2e8f0;
                     text-align: center;
                 }
                 
                 .cod-payment-status {
-                    margin-bottom: 10px;
-                    font-size: 14px;
+                    margin-bottom: 0.625rem;
+                    font-size: 0.875rem;
                 }
                 
                 .cod-payment-status.success {
@@ -400,22 +400,22 @@ jQuery(document).ready(function($) {
                 }
                 
                 .cod-payment-timer {
-                    margin-bottom: 10px;
-                    font-size: 14px;
+                    margin-bottom: 0.625rem;
+                    font-size: 0.875rem;
                     font-weight: 500;
                     color: #f59e0b;
                 }
                 
                 .cod-payment-note {
                     color: #64748b;
-                    font-size: 12px;
+                    font-size: 0.75rem;
                 }
                 
                 .cod-btn {
-                    padding: 12px 24px;
+                    padding: 0.75rem 1.5rem;
                     border: none;
                     border-radius: 6px;
-                    font-size: 14px;
+                    font-size: 0.875rem;
                     font-weight: 500;
                     cursor: pointer;
                     transition: all 0.2s;
@@ -433,8 +433,8 @@ jQuery(document).ready(function($) {
                 }
                 
                 .cod-btn-large {
-                    padding: 15px 30px;
-                    font-size: 16px;
+                    padding: 0.9375rem 1.875rem;
+                    font-size: 1rem;
                 }
                 
                 .cod-btn:disabled {
@@ -445,16 +445,20 @@ jQuery(document).ready(function($) {
                 @media (max-width: 768px) {
                     .cod-payment-modal-content {
                         width: 95%;
-                        margin: 20px;
+                        margin: 1.25rem;
                     }
                     
                     .cod-payment-content {
-                        padding: 20px;
+                        padding: 1.25rem;
                     }
                     
                     .cod-payment-tab {
-                        padding: 12px 15px;
-                        font-size: 13px;
+                        padding: 0.75rem 0.9375rem;
+                        font-size: 0.8125rem;
+                    }
+                    
+                    .cod-payment-modal-header h3 {
+                        font-size: 1rem;
                     }
                 }
             </style>
@@ -481,7 +485,7 @@ jQuery(document).ready(function($) {
         // Proceed to payment
         $(document).on('click', '#cod-proceed-payment', function() {
             if (window.currentPaymentUrl) {
-                window.open(window.currentPaymentUrl, '_blank');
+                window.location.href = window.currentPaymentUrl;
             }
         });
         
@@ -503,7 +507,7 @@ jQuery(document).ready(function($) {
         $('#cod-qr-code').empty();
         window.currentPaymentUrl = null;
         
-        // Auto-select tab based on device
+        // CRITICAL FIX: Device-based default tab selection
         const isMobile = window.innerWidth <= 768;
         switchPaymentTab(isMobile ? 'app' : 'qr');
         
@@ -519,10 +523,10 @@ jQuery(document).ready(function($) {
             paymentModal.fadeOut(300);
         }
         
-        // Clear timer
+        // CRITICAL FIX: Clear timer and re-enable button on modal close
         clearTokenTimer();
         
-        // Re-enable pay button
+        // Re-enable pay button and reset text
         const $payBtn = $('#cod_pay_token');
         $payBtn.prop('disabled', false).text('Pay ₹1 Token').removeClass('verified');
     }
@@ -561,11 +565,29 @@ jQuery(document).ready(function($) {
                         generateTestQR(data.short_url);
                     } else {
                         $('#cod-payment-status').addClass('success').text('Payment link created successfully');
-                        generateQRCode(data.short_url);
+                        
+                        // CRITICAL FIX: Dynamic QR code rendering using fetched short_url
+                        if ($('#cod-tab-qr').hasClass('active')) {
+                            renderQRCode(data.short_url);
+                        } else {
+                            renderMobileRedirect(data.short_url);
+                        }
                     }
                     
-                    // Start 2-minute timer
+                    // CRITICAL FIX: Start 2-minute timer only after successful link creation
                     startTokenTimer(120);
+                    
+                    // Set up tab click handlers with fetched URL
+                    $('#cod-tab-qr').off('click').on('click', function() {
+                        switchPaymentTab('qr');
+                        renderQRCode(data.short_url);
+                    });
+                    
+                    $('#cod-tab-app').off('click').on('click', function() {
+                        switchPaymentTab('app');
+                        renderMobileRedirect(data.short_url);
+                    });
+                    
                 } else {
                     $('#cod-payment-status').addClass('error').text(response.data || 'Failed to create payment link');
                 }
@@ -576,31 +598,53 @@ jQuery(document).ready(function($) {
         });
     }
     
-    function generateQRCode(url) {
-        // Clear previous QR code
-        $('#cod-qr-code').empty();
+    // CRITICAL FIX: Dynamic QR Code Rendering
+    function renderQRCode(url) {
+        const qrBox = document.getElementById('cod-qr-code');
+        if (!qrBox) return;
+        
+        qrBox.innerHTML = ''; // Clear previous content
         
         // Check if QRCode library is available
         if (typeof QRCode !== 'undefined') {
-            new QRCode(document.getElementById('cod-qr-code'), {
+            new QRCode(qrBox, {
                 text: url,
-                width: 200,
-                height: 200,
+                width: 220,
+                height: 220,
                 colorDark: '#000000',
                 colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
+                correctLevel: QRCode.CorrectLevel.H
             });
+            $('#cod-payment-status').text('Scan QR with UPI app. ₹1 will be refunded after payment.');
         } else {
+            console.error("QRCode.js library not loaded.");
             // Fallback: Use online QR code generator
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-            $('#cod-qr-code').html(`<img src="${qrUrl}" alt="Payment QR Code" style="max-width: 200px; border-radius: 8px;">`);
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
+            qrBox.innerHTML = `<img src="${qrUrl}" alt="Payment QR Code" style="max-width: 220px; border-radius: 8px;">`;
+            $('#cod-payment-status').text('Scan QR with UPI app. ₹1 will be refunded after payment.');
         }
+    }
+    
+    // CRITICAL FIX: Mobile Redirect Implementation
+    function renderMobileRedirect(url) {
+        const appContainer = document.querySelector('.cod-app-container');
+        if (!appContainer) return;
+        
+        // Clear previous content
+        const proceedBtn = document.getElementById('cod-proceed-payment');
+        if (proceedBtn) {
+            proceedBtn.onclick = function() {
+                window.location.href = url; // Redirect to the payment link
+            };
+        }
+        
+        $('#cod-payment-status').text('You will be redirected to UPI app or payment page.');
     }
     
     function generateTestQR(url) {
         // For test mode, create a simple placeholder QR
         $('#cod-qr-code').html(`
-            <div style="width: 200px; height: 200px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #666; font-size: 14px; text-align: center;">
+            <div style="width: 220px; height: 220px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #666; font-size: 0.875rem; text-align: center;">
                 TEST QR CODE<br>
                 <small>Scan with UPI app</small>
             </div>
@@ -1269,11 +1313,17 @@ jQuery(document).ready(function($) {
         clearTokenTimer();
     });
 
-    // Load QRCode.js library if not already loaded
+    // CRITICAL FIX: Load QRCode.js library if not already loaded
     if (typeof QRCode === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
         script.async = true;
+        script.onload = function() {
+            console.log('COD Verifier: QRCode.js library loaded successfully');
+        };
+        script.onerror = function() {
+            console.error('COD Verifier: Failed to load QRCode.js library');
+        };
         document.head.appendChild(script);
     }
 });

@@ -2,7 +2,7 @@
 /*
 Plugin Name: COD Verifier for WooCommerce
 Description: Multi-country OTP + Token verification for WooCommerce COD orders with Twilio SMS and Razorpay integration
-Version: 1.4.0
+Version: 1.5.0
 Author: Your Name
 Requires at least: 5.0
 Tested up to: 6.4
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('COD_VERIFIER_VERSION', '1.4.0');
+define('COD_VERIFIER_VERSION', '1.5.0');
 define('COD_VERIFIER_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('COD_VERIFIER_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -99,11 +99,20 @@ class CODVerifier {
         if (is_checkout()) {
             wp_enqueue_script('jquery');
             
+            // CRITICAL FIX: Enqueue QRCode.js library
+            wp_enqueue_script(
+                'qrcode-js',
+                'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+                array(),
+                '1.0.0',
+                true
+            );
+            
             // Main verification script
             wp_enqueue_script(
                 'cod-verifier-script',
                 COD_VERIFIER_PLUGIN_URL . 'assets/script.js',
-                array('jquery'),
+                array('jquery', 'qrcode-js'),
                 COD_VERIFIER_VERSION,
                 true
             );

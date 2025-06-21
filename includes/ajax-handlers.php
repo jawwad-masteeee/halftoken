@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 class CODVerifierAjax {
     
     public function __construct() {
+        // Existing OTP handlers - DO NOT MODIFY
         add_action('wp_ajax_cod_send_otp', array($this, 'send_otp'));
         add_action('wp_ajax_nopriv_cod_send_otp', array($this, 'send_otp'));
         add_action('wp_ajax_cod_verify_otp', array($this, 'verify_otp'));
@@ -90,9 +91,6 @@ class CODVerifierAjax {
         }
     }
     
-    /**
-     * Validate phone number against allowed regions
-     */
     private function validate_phone_region($phone, $allowed_regions) {
         // Extract country code from phone number
         $country_code = '';
@@ -158,9 +156,6 @@ class CODVerifierAjax {
         return array('valid' => true, 'message' => 'Valid region');
     }
     
-    /**
-     * Enhanced phone number validation for multiple countries
-     */
     private function validate_phone_number($phone, $country_code = '', $phone_number = '') {
         // Validation rules for each country
         $validation_rules = array(
@@ -357,7 +352,6 @@ class CODVerifierAjax {
         }
     }
     
-    // NEW: Create Razorpay Payment Link for ₹1 Token Payment
     public function create_payment_link() {
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cod_verifier_nonce')) {
@@ -404,12 +398,16 @@ class CODVerifierAjax {
             $customer_phone = $_SESSION['cod_otp_phone'];
         }
         
+        // CRITICAL FIX: Generate unique reference_id with max 40 characters
+        $reference_id = substr(md5(uniqid('', true)), 0, 30);
+        
         $payment_link_data = array(
             'amount' => 100, // ₹1 in paise
             'currency' => 'INR',
             'description' => '₹1 COD Token Payment - Will be refunded automatically',
-            'expire_by' => time() + 120, // 2 minutes expiry
-            'reference_id' => 'cod_token_' . time() . '_' . wp_generate_uuid4(),
+            // CRITICAL FIX: Set expire_by to minimum 15 minutes (900 seconds) as required by Razorpay
+            'expire_by' => time() + (15 * 60), // 15 minutes expiry for API compliance
+            'reference_id' => $reference_id, // Max 40 characters
             'notes' => array(
                 'purpose' => 'COD Token Payment',
                 'auto_refund' => 'yes',
@@ -451,7 +449,7 @@ class CODVerifierAjax {
             $_SESSION['cod_payment_link_created'] = time();
             
             wp_send_json_success(array(
-                'short_url' => $result['short_url'],
+                'short_url' => $result['short_url'], // Return the actual short_url from Razorpay
                 'link_id' => $result['id'],
                 'test_mode' => false,
                 'message' => __('Payment link created successfully', 'cod-verifier')
@@ -462,7 +460,6 @@ class CODVerifierAjax {
         }
     }
     
-    // NEW: Verify Token Payment and Auto-Refund
     public function verify_token_payment() {
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cod_verifier_nonce')) {
@@ -535,7 +532,6 @@ class CODVerifierAjax {
         }
     }
     
-    // NEW: Auto-Refund Function
     private function initiate_auto_refund($payment_id) {
         $key_id = get_option('cod_verifier_razorpay_key_id', '');
         $key_secret = get_option('cod_verifier_razorpay_key_secret', '');
@@ -579,7 +575,6 @@ class CODVerifierAjax {
         }
     }
     
-    // NEW: Webhook Handler for Payment Link Events
     public function handle_webhook() {
         $payload = file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] ?? '';
@@ -599,7 +594,7 @@ class CODVerifierAjax {
         
         $data = json_decode($payload, true);
         
-        if ($data['event'] === 'payment_link.paid') {
+        if (isset($data['event']) && $data['event'] === 'payment_link.paid') {
             $payment_id = $data['payload']['payment']['entity']['id'];
             $payment_link_id = $data['payload']['payment_link']['entity']['id'];
             
